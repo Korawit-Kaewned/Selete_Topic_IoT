@@ -22,7 +22,8 @@ st.markdown("""
 # ----------------------------
 # Model loading (from file)
 # ----------------------------
-MODEL_PATH = "model/model.joblib"   # เปลี่ยนเป็น "model.joblib" ได้ถ้าคุณวางไว้ข้าง app.py
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "model", "model.joblib")
 
 if not os.path.exists(MODEL_PATH):
     st.error(f"❌ ไม่พบไฟล์โมเดลที่: {MODEL_PATH}\n\nตรวจสอบว่าได้วาง model.joblib ไว้ถูกโฟลเดอร์แล้ว")
@@ -231,4 +232,5 @@ if uploaded_csv:
     )
 
 else:
+
     st.info("อัปโหลดไฟล์ CSV เพื่อเริ่มทำนาย (ระบบโหลดโมเดลอัตโนมัติจากไฟล์ในเครื่อง)")
