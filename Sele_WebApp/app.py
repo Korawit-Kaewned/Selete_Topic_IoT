@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+import plotly.graph_objects as go
 import os
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
@@ -18,6 +17,7 @@ st.markdown("""
 **Workflow:** Upload CSV → Data Preparation → Resample 1H → Lag Features → Load model → Predict → Show results  
 ไฟล์ต้องมีคอลัมน์เวลา **convert time** และคอลัมน์อุณหภูมิ **temp**
 """)
+
 
 # ----------------------------
 # Model loading (from file)
@@ -92,53 +92,65 @@ def make_lags(hourly_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def plot_actual_vs_pred(result_df: pd.DataFrame, daily_mode=False, selected_date=None):
+def plot_actual_vs_pred_interactive(result_df: pd.DataFrame, daily_mode=False, selected_date=None):
+    fig = go.Figure()
 
-    fig, ax = plt.subplots(figsize=(14,5))
-
-    # เส้น Actual
-    ax.plot(
-        result_df.index,
-        result_df["actual_temp"],
-        label="Actual",
-        linewidth=2,
-        alpha=0.9
+    fig.add_trace(
+        go.Scatter(
+            x=result_df.index,
+            y=result_df["actual_temp"],
+            mode="lines",
+            name="Actual",
+            hovertemplate="<b>Time</b>: %{x}<br><b>Actual</b>: %{y:.2f} °C<extra></extra>"
+        )
     )
 
-    # เส้น Predicted
-    ax.plot(
-        result_df.index,
-        result_df["predicted_temp"],
-        label="Predicted",
-        linewidth=2,
-        alpha=0.8
+    fig.add_trace(
+        go.Scatter(
+            x=result_df.index,
+            y=result_df["predicted_temp"],
+            mode="lines",
+            name="Predicted",
+            hovertemplate="<b>Time</b>: %{x}<br><b>Predicted</b>: %{y:.2f} °C<extra></extra>"
+        )
     )
-
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Temperature (°C)")
 
     if daily_mode and selected_date is not None:
-        ax.set_title(f"Actual vs Predicted Temperature — {selected_date}")
+        title = f"Actual vs Predicted Temperature — {selected_date}"
     else:
-        ax.set_title("Actual vs Predicted Temperature (Hourly)")
+        title = "Actual vs Predicted Temperature (Hourly)"
 
-    ax.legend()
-    ax.grid(True, linestyle="--", alpha=0.3)
+    fig.update_layout(
+        title=title,
+        xaxis_title="Time",
+        yaxis_title="Temperature (°C)",
+        hovermode="x unified",
+        template="plotly_white",
+        height=520,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        margin=dict(l=40, r=20, t=60, b=40)
+    )
 
-    # -------------------------
-    # X axis
-    # -------------------------
-    if daily_mode:
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=2))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+    fig.update_xaxes(
+        rangeslider_visible=True,
+        showspikes=True,
+        spikemode="across",
+        spikesnap="cursor",
+        showline=True
+    )
 
-    else:
-        ax.xaxis.set_major_locator(mdates.DayLocator(interval=3))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
-
-    plt.xticks(rotation=30)
-
-    fig.tight_layout()
+    fig.update_yaxes(
+        showspikes=True,
+        spikemode="across",
+        spikesnap="cursor",
+        showline=True
+    )
 
     return fig
 
@@ -161,6 +173,7 @@ if uploaded_csv:
             progress.progress(10)
             df_raw = pd.read_csv(uploaded_csv)
 
+            # Validate columns
             if "convert time" not in df_raw.columns or "temp" not in df_raw.columns:
                 st.error("ไฟล์ CSV ต้องมีคอลัมน์ 'convert time' และ 'temp'")
                 st.stop()
@@ -172,6 +185,10 @@ if uploaded_csv:
             status_box.info("Step 3/5: Feature Engineering ...")
             progress.progress(55)
             feat = make_lags(hourly)
+
+            if feat.empty:
+                st.error("ข้อมูลไม่เพียงพอหลังสร้าง lag features กรุณาตรวจสอบไฟล์ input")
+                st.stop()
 
             status_box.info("Step 4/5: Predict ...")
             progress.progress(75)
@@ -216,15 +233,14 @@ if uploaded_csv:
         st.warning("ไม่มีข้อมูลสำหรับวันที่เลือก")
         st.stop()
 
-    # Metrics ตามช่วงที่เลือก
+    # ----------------------------
+    # Metrics section
+    # ----------------------------
     y_true = filtered_result["actual_temp"].values
     y_hat = filtered_result["predicted_temp"].values
     mae = float(mean_absolute_error(y_true, y_hat))
     rmse = float(np.sqrt(mean_squared_error(y_true, y_hat)))
 
-    # ----------------------------
-    # Metrics section
-    # ----------------------------
     st.subheader("📌 Model Metrics")
     m1, m2, m3 = st.columns(3)
     m1.metric("MAE (°C)", f"{mae:.3f}")
@@ -247,27 +263,30 @@ if uploaded_csv:
             int(filtered_hourly["temp_final"].isna().sum()),
         )
         st.write("ตัวอย่างข้อมูลรายชั่วโมง:")
-        st.dataframe(filtered_hourly.head(SHOW_ROWS))
+        st.dataframe(filtered_hourly.head(SHOW_ROWS), use_container_width=True)
 
     with colB:
         st.subheader("🔮 Prediction Output")
         st.write("ตัวอย่างผลลัพธ์:")
         st.dataframe(
-            filtered_result[["actual_temp", "temp_lag1", "temp_lag2", "temp_lag3", "predicted_temp"]].head(SHOW_ROWS)
+            filtered_result[
+                ["actual_temp", "temp_lag1", "temp_lag2", "temp_lag3", "predicted_temp"]
+            ].head(SHOW_ROWS),
+            use_container_width=True
         )
 
     st.divider()
 
     # ----------------------------
-    # Plot
+    # Interactive Plot
     # ----------------------------
     st.subheader("📈 Actual vs Predicted")
-    fig = plot_actual_vs_pred(
+    fig = plot_actual_vs_pred_interactive(
         filtered_result,
         daily_mode=daily_mode,
         selected_date=selected_date
     )
-    st.pyplot(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
     # ----------------------------
     # Download
@@ -284,5 +303,3 @@ if uploaded_csv:
 
 else:
     st.info("อัปโหลดไฟล์ CSV เพื่อเริ่มทำนาย")
-
-
