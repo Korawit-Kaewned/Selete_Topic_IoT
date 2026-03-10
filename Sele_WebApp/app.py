@@ -158,7 +158,7 @@ def plot_actual_vs_pred_interactive(result_df: pd.DataFrame, daily_mode=False, s
     )
 
     return fig
-
+)
 
 # ----------------------------
 # UI: Upload
@@ -308,6 +308,7 @@ if uploaded_csv:
 
 else:
     st.info("อัปโหลดไฟล์ CSV เพื่อเริ่มทำนาย")
+
 
 
 
