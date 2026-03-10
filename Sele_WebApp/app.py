@@ -138,8 +138,8 @@ def plot_actual_vs_pred_interactive(result_df: pd.DataFrame, daily_mode=False, s
             y=1.02,
             xanchor="right",
             x=1
-        ),
-        margin=dict(l=40, r=20, t=60, b=40)
+    ),
+    margin=dict(l=40, r=20, t=60, b=40)
     )
 
     fig.update_xaxes(
@@ -308,5 +308,6 @@ if uploaded_csv:
 
 else:
     st.info("อัปโหลดไฟล์ CSV เพื่อเริ่มทำนาย")
+
 
 
