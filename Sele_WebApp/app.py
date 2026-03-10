@@ -127,25 +127,27 @@ def plot_actual_vs_pred_interactive(result_df: pd.DataFrame, daily_mode=False, s
         hovermode="x unified",
         template="plotly_white",
         height=520,
-
-        # พื้นหลังกราฟ
+    
+        # พื้นหลัง
         plot_bgcolor="white",
         paper_bgcolor="white",
-
+    
+        # สีตัวหนังสือ
         font=dict(
             family="Arial",
             size=14,
             color="black"
         ),
-
+    
         legend=dict(
             orientation="h",
             yanchor="bottom",
             y=1.02,
             xanchor="right",
-            x=1
+            x=1,
+            font=dict(size=13, color="black")
         ),
-
+    
         margin=dict(l=40, r=20, t=60, b=40)
     )
 
@@ -318,6 +320,7 @@ if uploaded_csv:
 
 else:
     st.info("อัปโหลดไฟล์ CSV เพื่อเริ่มทำนาย")
+
 
 
 
