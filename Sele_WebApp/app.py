@@ -127,19 +127,20 @@ def plot_actual_vs_pred_interactive(result_df: pd.DataFrame, daily_mode=False, s
         hovermode="x unified",
         template="plotly_white",
         height=520,
-    
+
         # พื้นหลังกราฟ
         plot_bgcolor="white",
-        paper_bgcolor="white"
-    )
-    legend=dict(
+        paper_bgcolor="white",
+
+        legend=dict(
             orientation="h",
             yanchor="bottom",
             y=1.02,
             xanchor="right",
             x=1
-    ),
-    margin=dict(l=40, r=20, t=60, b=40)
+        ),
+
+        margin=dict(l=40, r=20, t=60, b=40)
     )
 
     fig.update_xaxes(
@@ -147,18 +148,21 @@ def plot_actual_vs_pred_interactive(result_df: pd.DataFrame, daily_mode=False, s
         showspikes=True,
         spikemode="across",
         spikesnap="cursor",
-        showline=True
+        showline=True,
+        showgrid=True,
+        gridcolor="lightgray"
     )
 
     fig.update_yaxes(
         showspikes=True,
         spikemode="across",
         spikesnap="cursor",
-        showline=True
+        showline=True,
+        showgrid=True,
+        gridcolor="lightgray"
     )
 
     return fig
-)
 
 # ----------------------------
 # UI: Upload
@@ -308,6 +312,7 @@ if uploaded_csv:
 
 else:
     st.info("อัปโหลดไฟล์ CSV เพื่อเริ่มทำนาย")
+
 
 
 
