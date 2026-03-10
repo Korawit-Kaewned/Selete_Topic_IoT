@@ -92,30 +92,73 @@ def make_lags(hourly_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_actual_vs_pred(result_df: pd.DataFrame):
-    """
-    Make time axis readable:
-    - format: DD/MM HH:00
-    - auto tick density
-    - rotate labels
-    """
-    fig, ax = plt.subplots()
-    ax.plot(result_df.index, result_df["actual_temp"], label="Actual")
-    ax.plot(result_df.index, result_df["predicted_temp"], label="Predicted")
+
+    fig, ax = plt.subplots(figsize=(12,5))
+
+    ax.plot(result_df.index, result_df["actual_temp"], label="Actual", linewidth=2)
+    ax.plot(result_df.index, result_df["predicted_temp"], label="Predicted", linewidth=2)
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Temperature (°C)")
     ax.set_title("Actual vs Predicted Temperature (Hourly)")
     ax.legend()
+    ax.grid(True, alpha=0.3)
 
-    locator = mdates.AutoDateLocator(minticks=5, maxticks=9)
-    formatter = mdates.DateFormatter("%d/%m %H:00")
+    # ----------------------------
+    # AUTO X AXIS SCALE
+    # ----------------------------
+    time_span = result_df.index.max() - result_df.index.min()
+
+    if time_span <= pd.Timedelta(days=2):
+        locator = mdates.HourLocator(interval=2)
+        formatter = mdates.DateFormatter("%d/%m\n%H:%M")
+
+    elif time_span <= pd.Timedelta(days=7):
+        locator = mdates.HourLocator(interval=6)
+        formatter = mdates.DateFormatter("%d/%m\n%H:%M")
+
+    elif time_span <= pd.Timedelta(days=30):
+        locator = mdates.DayLocator(interval=2)
+        formatter = mdates.DateFormatter("%d/%m")
+
+    else:
+        locator = mdates.AutoDateLocator(minticks=5, maxticks=10)
+        formatter = mdates.DateFormatter("%d/%m/%y")
+
     ax.xaxis.set_major_locator(locator)
     ax.xaxis.set_major_formatter(formatter)
 
-    plt.xticks(rotation=45, ha="right")
-    fig.tight_layout()
-    return fig
+    # ----------------------------
+    # AUTO Y AXIS SCALE
+    # ----------------------------
+    y_all = pd.concat([
+        result_df["actual_temp"],
+        result_df["predicted_temp"]
+    ]).dropna()
 
+    if len(y_all) > 0:
+
+        y_min = y_all.min()
+        y_max = y_all.max()
+
+        y_range = y_max - y_min
+
+        # ถ้าช่วงแคบมาก
+        if y_range < 0.5:
+            pad = 0.5
+        else:
+            pad = y_range * 0.1   # padding 10%
+
+        ax.set_ylim(y_min - pad, y_max + pad)
+
+    # ----------------------------
+    # Rotate label
+    # ----------------------------
+    plt.xticks(rotation=45, ha="right")
+
+    fig.tight_layout()
+
+    return fig
 
 # ----------------------------
 # UI: Upload
@@ -234,4 +277,5 @@ if uploaded_csv:
 else:
 
     st.info("อัปโหลดไฟล์ CSV เพื่อเริ่มทำนาย")
+
 
