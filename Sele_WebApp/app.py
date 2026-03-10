@@ -92,67 +92,54 @@ def make_lags(hourly_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def plot_actual_vs_pred(result_df: pd.DataFrame, daily_mode: bool = False, selected_date=None):
-    fig, ax = plt.subplots(figsize=(12, 5))
+def plot_actual_vs_pred(result_df: pd.DataFrame, daily_mode=False, selected_date=None):
 
-    ax.plot(result_df.index, result_df["actual_temp"], label="Actual", linewidth=2, marker="o")
-    ax.plot(result_df.index, result_df["predicted_temp"], label="Predicted", linewidth=2, marker="o")
+    fig, ax = plt.subplots(figsize=(14,5))
+
+    # เส้น Actual
+    ax.plot(
+        result_df.index,
+        result_df["actual_temp"],
+        label="Actual",
+        linewidth=2,
+        alpha=0.9
+    )
+
+    # เส้น Predicted
+    ax.plot(
+        result_df.index,
+        result_df["predicted_temp"],
+        label="Predicted",
+        linewidth=2,
+        alpha=0.8
+    )
 
     ax.set_xlabel("Time")
     ax.set_ylabel("Temperature (°C)")
 
     if daily_mode and selected_date is not None:
-        ax.set_title(f"Actual vs Predicted Temperature - {selected_date}")
+        ax.set_title(f"Actual vs Predicted Temperature — {selected_date}")
     else:
         ax.set_title("Actual vs Predicted Temperature (Hourly)")
 
     ax.legend()
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, linestyle="--", alpha=0.3)
 
-    # ----------------------------
-    # X AXIS
-    # ----------------------------
+    # -------------------------
+    # X axis
+    # -------------------------
     if daily_mode:
-        # สำหรับดูวันเดียว
-        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=2))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+
     else:
-        time_span = result_df.index.max() - result_df.index.min()
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=3))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
 
-        if time_span <= pd.Timedelta(days=2):
-            locator = mdates.HourLocator(interval=2)
-            formatter = mdates.DateFormatter("%d/%m\n%H:%M")
-        elif time_span <= pd.Timedelta(days=7):
-            locator = mdates.HourLocator(interval=6)
-            formatter = mdates.DateFormatter("%d/%m\n%H:%M")
-        elif time_span <= pd.Timedelta(days=30):
-            locator = mdates.DayLocator(interval=2)
-            formatter = mdates.DateFormatter("%d/%m")
-        else:
-            locator = mdates.AutoDateLocator(minticks=5, maxticks=10)
-            formatter = mdates.DateFormatter("%d/%m/%y")
+    plt.xticks(rotation=30)
 
-        ax.xaxis.set_major_locator(locator)
-        ax.xaxis.set_major_formatter(formatter)
-
-    # ----------------------------
-    # Y AXIS
-    # ----------------------------
-    y_all = pd.concat([
-        result_df["actual_temp"],
-        result_df["predicted_temp"]
-    ]).dropna()
-
-    if len(y_all) > 0:
-        y_min = y_all.min()
-        y_max = y_all.max()
-        y_range = y_max - y_min
-
-        pad = 0.5 if y_range < 0.5 else y_range * 0.1
-        ax.set_ylim(y_min - pad, y_max + pad)
-
-    plt.xticks(rotation=45, ha="right")
     fig.tight_layout()
+
     return fig
 
 
@@ -297,4 +284,5 @@ if uploaded_csv:
 
 else:
     st.info("อัปโหลดไฟล์ CSV เพื่อเริ่มทำนาย")
+
 
